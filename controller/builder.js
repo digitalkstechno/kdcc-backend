@@ -72,12 +72,49 @@ exports.fetchBuilderById = async (req, res) => {
     
     // Find the builder record to update unique views
     const builderRecord = await BUILDER.findOne({ userId: builderData._id }).select("+uniqueIPs");
-    if (builderRecord && !builderRecord.uniqueIPs.includes(clientIP)) {
+    if (builderRecord) {
+      if (!builderRecord.uniqueIPs.includes(clientIP)) {
         builderRecord.uniqueIPs.push(clientIP);
         builderRecord.viewCount = (builderRecord.viewCount || 0) + 1;
         await builderRecord.save();
-        // Update the returned data object so frontend gets the latest count
-        builderData.viewCount = builderRecord.viewCount;
+      }
+      builderData.viewCount = builderRecord.viewCount;
+    }
+
+    return res.status(200).json({ status: "Success", message: "Builder fetched successfully", data: builderData });
+  } catch (error) {
+    return res.status(404).json({ status: "Fail", message: error.message });
+  }
+};
+
+exports.fetchBuilderBySerial = async (req, res) => {
+  try {
+    const { serial, slug } = req.params;
+    // Find by permanent serialNumber - never changes
+    const details = await BUILDER.findOne({ serialNumber: parseInt(serial) });
+    if (!details) return res.status(404).json({ status: "Fail", message: "Builder not found" });
+
+    const { fetchUserByIdService } = require('../service/user');
+    const builderData = await fetchUserByIdService(details.userId.toString());
+    if (builderData.role !== "user") throw new Error("Not a builder");
+
+    // Unique view logic
+    const rawIP =
+      req.headers['cf-connecting-ip'] ||
+      req.headers['x-client-ip'] ||
+      req.headers['x-real-ip'] ||
+      req.headers['x-forwarded-for']?.split(',')[0] ||
+      req.socket.remoteAddress;
+    const clientIP = resolveIP(rawIP);
+
+    const builderRecord = await BUILDER.findOne({ userId: builderData._id }).select("+uniqueIPs");
+    if (builderRecord) {
+      if (!builderRecord.uniqueIPs.includes(clientIP)) {
+        builderRecord.uniqueIPs.push(clientIP);
+        builderRecord.viewCount = (builderRecord.viewCount || 0) + 1;
+        await builderRecord.save();
+      }
+      builderData.viewCount = builderRecord.viewCount;
     }
 
     return res.status(200).json({ status: "Success", message: "Builder fetched successfully", data: builderData });

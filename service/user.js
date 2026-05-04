@@ -6,8 +6,8 @@ const jwt = require("jsonwebtoken");
 
 exports.createUserService = async (body) => {
   const { 
-    name, location, timing, website, refer, profileImage, 
-    secondaryNumber, whatsappNumber, facebookLink, instagramLink, messageNumber, logo, companyName, adImage,
+    name, location, homeAddress, timing, website, refer, profileImage, 
+    secondaryNumber, whatsappNumber, facebookLink, instagramLink, messageNumber, logo, companyName, adImage, designation, bloodGroup, aadharNumber,
     ...userAuthData 
   } = body;
   const { number } = userAuthData;
@@ -17,12 +17,18 @@ exports.createUserService = async (body) => {
   }
 
   const user = await USER.create(userAuthData);
-  
+
+  // Auto-increment serialNumber
+  const lastBuilder = await BUILDER.findOne({}, { serialNumber: 1 }).sort({ serialNumber: -1 });
+  const nextSerial = (lastBuilder?.serialNumber || 0) + 1;
+
   await BUILDER.create({
     userId: user._id,
+    serialNumber: nextSerial,
     name,
     number,
     location,
+    homeAddress,
     timing,
     website,
     refer,
@@ -34,12 +40,15 @@ exports.createUserService = async (body) => {
     messageNumber,
     logo,
     companyName,
-    adImage
+    adImage,
+    designation,
+    bloodGroup,
+    aadharNumber
   });
 
   return { 
-    ...user._doc, name, number, location, timing, website, refer, profileImage,
-    secondaryNumber, whatsappNumber, facebookLink, instagramLink, messageNumber, logo, companyName
+    ...user._doc, name, number, location, homeAddress, timing, website, refer, profileImage,
+    secondaryNumber, whatsappNumber, facebookLink, instagramLink, messageNumber, logo, companyName, designation, bloodGroup, aadharNumber
   };
 };
 
@@ -124,17 +133,25 @@ exports.fetchAllUsersService = async ({ page, limit, search, roleFilter }) => {
 
 exports.fetchUserByIdService = async (userId) => {
   // 1. Try to find user by User ID first
-  let user = await USER.findOne({ _id: userId, isDeleted: false });
+  let user = await USER.findOne({ _id: userId, isDeleted: false }).catch(() => null);
   let details;
 
   if (user) {
-    // Found user, now find their builder details
     details = await BUILDER.findOne({ userId });
   } else {
-    // 2. If not found by User ID, try finding a Builder record by its own ID
-    details = await BUILDER.findById(userId);
+    // 2. Try finding a Builder record by its own ID
+    details = await BUILDER.findById(userId).catch(() => null);
     if (details) {
-      // If builder entry found, find the associated user
+      user = await USER.findOne({ _id: details.userId, isDeleted: false });
+    }
+  }
+
+  // 3. If still not found, try slug match on builder name
+  if (!user) {
+    const slugToName = (slug) => slug.replace(/-/g, ' ');
+    const nameRegex = new RegExp(`^${slugToName(userId)}$`, 'i');
+    details = await BUILDER.findOne({ name: nameRegex });
+    if (details) {
       user = await USER.findOne({ _id: details.userId, isDeleted: false });
     }
   }
@@ -153,8 +170,8 @@ exports.fetchUserByIdService = async (userId) => {
 
 exports.userUpdateService = async (userId, body) => {
   const { 
-    name, location, timing, website, refer, profileImage,
-    secondaryNumber, whatsappNumber, facebookLink, instagramLink, messageNumber, logo, companyName, adImage,
+    name, location, homeAddress, timing, website, refer, profileImage,
+    secondaryNumber, whatsappNumber, facebookLink, instagramLink, messageNumber, logo, companyName, adImage, designation, bloodGroup, aadharNumber,
     ...userAuthData 
   } = body;
   const { number } = userAuthData;
@@ -181,12 +198,16 @@ exports.userUpdateService = async (userId, body) => {
     deleteUploadedFile("builder", oldDetails.adImage);
   }
 
+  const builderUpdate = { 
+    name, number, location, homeAddress, timing, website, refer, profileImage,
+    secondaryNumber, whatsappNumber, facebookLink, instagramLink, messageNumber, logo, companyName, adImage, designation, bloodGroup, aadharNumber
+  };
+  // Remove only undefined fields - allow empty strings to clear existing values
+  Object.keys(builderUpdate).forEach(k => builderUpdate[k] === undefined && delete builderUpdate[k]);
+
   const updatedDetails = await BUILDER.findOneAndUpdate(
       { userId },
-      { 
-        name, number, location, timing, website, refer, profileImage,
-        secondaryNumber, whatsappNumber, facebookLink, instagramLink, messageNumber, logo, companyName, adImage
-      },
+      { $set: builderUpdate },
       { new: true, upsert: true }
   );
 
@@ -194,7 +215,10 @@ exports.userUpdateService = async (userId, body) => {
 };
 
 exports.userDeleteService = async (userId) => {
-  const oldUser = await USER.findOne({ _id: userId, isDeleted: false });
-  if (!oldUser) throw new Error("User not found or already deleted");
-  await USER.findByIdAndUpdate(userId, { isDeleted: true, deletedAt: new Date() });
+  const mongoose = require('mongoose');
+  const objectId = new mongoose.Types.ObjectId(String(userId));
+  const oldUser = await USER.findOne({ _id: objectId });
+  if (!oldUser) throw new Error("User not found");
+  await USER.deleteOne({ _id: objectId });
+  await BUILDER.findOneAndDelete({ userId: objectId });
 };

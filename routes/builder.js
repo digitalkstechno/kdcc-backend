@@ -4,6 +4,7 @@ const {
   fetchAllBuilders,
   updateBuilder,
   fetchBuilderById,
+  fetchBuilderBySerial,
   fetchMyBuilderProfile,
   deleteAdImage
 } = require("../controller/builder");
@@ -18,6 +19,7 @@ router.delete("/me/ad-image", authMiddleware, deleteAdImage);
 router.get("/all", authMiddleware, restrictTo("admin"), fetchAllBuilders);
 
 // Public route
+router.get("/by-serial/:serial/:slug", fetchBuilderBySerial);
 router.get("/:id", fetchBuilderById);
 
 // Global middleware for remaining routes (updates)
