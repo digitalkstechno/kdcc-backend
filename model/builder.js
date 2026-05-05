@@ -22,6 +22,7 @@ const BuilderSchema = new mongoose.Schema(
     designation: { type: String },
     bloodGroup: { type: String },
     aadharNumber: { type: String },
+    edpNumber: { type: String },
     adImage: { type: String },
     viewCount: { type: Number, default: 0 },
 
