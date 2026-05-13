@@ -74,7 +74,7 @@ exports.loginUserService = async ({ identifier, password }) => {
   return { user: { ...userVerify._doc, ...details?._doc, _id: userVerify._id }, token };
 };
 
-exports.fetchAllUsersService = async ({ page, limit, search, roleFilter }) => {
+exports.fetchAllUsersService = async ({ page, limit, search, roleFilter, edpSearch }) => {
   const skip = (page - 1) * limit;
 
   const matchQuery = { isDeleted: false };
@@ -105,14 +105,23 @@ exports.fetchAllUsersService = async ({ page, limit, search, roleFilter }) => {
         ],
       },
     },
+  ];
+
+  if (edpSearch) {
+    aggregate.splice(aggregate.length - 1, 0, {
+      $match: { "details.edpNumber": { $regex: edpSearch, $options: "i" } }
+    });
+  }
+
+  aggregate.push(
     { $sort: { createdAt: -1 } },
     {
       $facet: {
         metadata: [{ $count: "total" }],
         data: [{ $skip: skip }, { $limit: limit }],
       },
-    },
-  ];
+    }
+  );
 
   const result = await USER.aggregate(aggregate);
   const totalUser = result[0].metadata[0]?.total || 0;

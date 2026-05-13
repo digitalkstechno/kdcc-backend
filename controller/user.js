@@ -50,8 +50,9 @@ exports.fetchAllUsers = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search || "";
+    const edpSearch = req.query.edpSearch || "";
     // Admin can fetch all roles (admin and user)
-    const { totalUser, usersData } = await fetchAllUsersService({ page, limit, search });
+    const { totalUser, usersData } = await fetchAllUsersService({ page, limit, search, edpSearch });
     return res.status(200).json({
       status: "Success",
       message: "Users fetched successfully",
