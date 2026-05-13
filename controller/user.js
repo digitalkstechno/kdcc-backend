@@ -20,6 +20,22 @@ exports.createUser = async (req, res) => {
   }
 };
 
+exports.adminCreateUser = async (req, res) => {
+  try {
+    // If files were uploaded, add their filenames to the body
+    if (req.files) {
+      if (req.files.profileImage) req.body.profileImage = req.files.profileImage[0].filename;
+      if (req.files.logo) req.body.logo = req.files.logo[0].filename;
+      if (req.files.adImage) req.body.adImage = req.files.adImage[0].filename;
+    }
+
+    const userDetails = await createUserService(req.body);
+    return res.status(201).json({ status: "Success", message: "User created successfully", data: userDetails });
+  } catch (error) {
+    return res.status(400).json({ status: "Fail", message: error.message });
+  }
+};
+
 exports.loginUser = async (req, res) => {
   try {
     const { user, token } = await loginUserService(req.body);
@@ -185,8 +201,8 @@ exports.bulkUploadExcel = async (req, res) => {
       const aadharNumber = row.getCell(8).value?.toString().trim() || '';
 
       if (!name || !number) { results.skipped++; continue; }
-      if (!/^[0-9]{10}$/.test(number)) { results.errors.push(`Row ${i}: Invalid mobile number "${number}" - must be 10 digits`); continue; }
-      if (aadharNumber && !/^[0-9]{12}$/.test(aadharNumber)) { results.errors.push(`Row ${i}: Invalid Aadhar number "${aadharNumber}" - must be 12 digits`); continue; }
+      // if (!/^[0-9]{10}$/.test(number)) { results.errors.push(`Row ${i}: Invalid mobile number "${number}" - must be 10 digits`); continue; }
+      // if (aadharNumber && !/^[0-9]{12}$/.test(aadharNumber)) { results.errors.push(`Row ${i}: Invalid Aadhar number "${aadharNumber}" - must be 12 digits`); continue; }
 
       try {
         // Generate email: name (lowercase, no spaces) + last 3 digits of number + @gmail.com

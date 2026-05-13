@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken");
 exports.createUserService = async (body) => {
   const { 
     name, location, homeAddress, timing, website, refer, profileImage, 
-    secondaryNumber, whatsappNumber, facebookLink, instagramLink, messageNumber, logo, companyName, adImage, designation, bloodGroup, aadharNumber, edpNumber,
+    secondaryNumber, whatsappNumber, facebookLink, instagramLink, youtubeLink, linkedinLink, twitterLink, messageNumber, logo, companyName, adImage, designation, bloodGroup, aadharNumber, edpNumber,
     ...userAuthData 
   } = body;
   const { number } = userAuthData;
@@ -37,6 +37,9 @@ exports.createUserService = async (body) => {
     whatsappNumber,
     facebookLink,
     instagramLink,
+    youtubeLink,
+    linkedinLink,
+    twitterLink,
     messageNumber,
     logo,
     companyName,
@@ -172,7 +175,7 @@ exports.fetchUserByIdService = async (userId) => {
 exports.userUpdateService = async (userId, body) => {
   const { 
     name, location, homeAddress, timing, website, refer, profileImage,
-    secondaryNumber, whatsappNumber, facebookLink, instagramLink, messageNumber, logo, companyName, adImage, designation, bloodGroup, aadharNumber, edpNumber,
+    secondaryNumber, whatsappNumber, facebookLink, instagramLink, youtubeLink, linkedinLink, twitterLink, messageNumber, logo, companyName, adImage, designation, bloodGroup, aadharNumber, edpNumber,
     ...userAuthData 
   } = body;
   const { number } = userAuthData;
@@ -201,7 +204,7 @@ exports.userUpdateService = async (userId, body) => {
 
   const builderUpdate = { 
     name, number, location, homeAddress, timing, website, refer, profileImage,
-    secondaryNumber, whatsappNumber, facebookLink, instagramLink, messageNumber, logo, companyName, adImage, designation, bloodGroup, aadharNumber, edpNumber
+    secondaryNumber, whatsappNumber, facebookLink, instagramLink, youtubeLink, linkedinLink, twitterLink, messageNumber, logo, companyName, adImage, designation, bloodGroup, aadharNumber, edpNumber
   };
   // Remove only undefined fields - allow empty strings to clear existing values
   Object.keys(builderUpdate).forEach(k => builderUpdate[k] === undefined && delete builderUpdate[k]);
