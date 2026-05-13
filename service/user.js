@@ -90,28 +90,34 @@ exports.fetchAllUsersService = async ({ page, limit, search, roleFilter, edpSear
       },
     },
     { $unwind: { path: "$details", preserveNullAndEmptyArrays: true } },
-    {
-      $match: {
-        ...matchQuery,
-        $or: [
-          { email: { $regex: search, $options: "i" } },
-          { number: { $regex: search, $options: "i" } },
-          { role: { $regex: search, $options: "i" } },
-          { status: { $regex: search, $options: "i" } },
-          { "details.name": { $regex: search, $options: "i" } },
-          { "details.refer": { $regex: search, $options: "i" } },
-          { "details.location": { $regex: search, $options: "i" } },
-          { "details.website": { $regex: search, $options: "i" } },
-        ],
-      },
-    },
   ];
 
-  if (edpSearch) {
-    aggregate.splice(aggregate.length - 1, 0, {
-      $match: { "details.edpNumber": { $regex: edpSearch, $options: "i" } }
-    });
+  // Build the match conditions
+  const matchConditions = { ...matchQuery };
+  
+  const searchOr = [];
+  if (search) {
+    searchOr.push(
+      { email: { $regex: search, $options: "i" } },
+      { number: { $regex: search, $options: "i" } },
+      { role: { $regex: search, $options: "i" } },
+      { status: { $regex: search, $options: "i" } },
+      { "details.name": { $regex: search, $options: "i" } },
+      { "details.refer": { $regex: search, $options: "i" } },
+      { "details.location": { $regex: search, $options: "i" } },
+      { "details.website": { $regex: search, $options: "i" } }
+    );
   }
+
+  if (edpSearch) {
+    matchConditions["details.edpNumber"] = { $regex: edpSearch, $options: "i" };
+  }
+
+  if (searchOr.length > 0) {
+    matchConditions.$or = searchOr;
+  }
+
+  aggregate.push({ $match: matchConditions });
 
   aggregate.push(
     { $sort: { createdAt: -1 } },

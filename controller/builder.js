@@ -18,8 +18,9 @@ exports.fetchAllBuilders = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search || "";
+    const edpSearch = req.query.edpSearch || "";
     // Hardcode filter for ONLY 'user' role
-    const { totalUser, usersData } = await fetchAllUsersService({ page, limit, search, roleFilter: "user" });
+    const { totalUser, usersData } = await fetchAllUsersService({ page, limit, search, edpSearch, roleFilter: "user" });
     
     return res.status(200).json({
       status: "Success",
