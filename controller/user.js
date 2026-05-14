@@ -201,21 +201,18 @@ exports.bulkUploadExcel = async (req, res) => {
       const bloodGroup = row.getCell(7).value?.toString().trim() || '';
       const aadharNumber = row.getCell(8).value?.toString().trim() || '';
 
-      if (!name || !number) { results.skipped++; continue; }
-      // if (!/^[0-9]{10}$/.test(number)) { results.errors.push(`Row ${i}: Invalid mobile number "${number}" - must be 10 digits`); continue; }
-      // if (aadharNumber && !/^[0-9]{12}$/.test(aadharNumber)) { results.errors.push(`Row ${i}: Invalid Aadhar number "${aadharNumber}" - must be 12 digits`); continue; }
-
       try {
         // Generate email: name (lowercase, no spaces) + last 3 digits of number + @gmail.com
-        const namePart = name.toLowerCase().replace(/\s+/g, '');
-        const numPart = number.slice(-3);
+        const namePart = (name || '').toLowerCase().replace(/\s+/g, '');
+        const numPart = (number || '').slice(-3);
         const genEmail = `${namePart}${numPart}@gmail.com`;
 
         // Check if user already exists by number or generated email
-        const existing = await USER.findOne({ $or: [{ number }, { email: genEmail }] });
+        const existing = await USER.findOne({ $or: [{ number: number || 'NON_EXISTENT' }, { email: genEmail }] });
         if (existing) { results.skipped++; continue; }
 
-        const password = number.slice(-6) || '123456';
+        const password = (number || '').slice(-6) || '123456';
+
         const { createUserService } = require('../service/user');
         await createUserService({ name, number, email: genEmail, password, designation, edpNumber, location, bloodGroup, aadharNumber, role: 'user' });
         results.created++;

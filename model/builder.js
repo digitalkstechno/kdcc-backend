@@ -4,7 +4,7 @@ const BuilderSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     serialNumber: { type: Number, unique: true },
-    name: { type: String, required: true },
+    name: { type: String },
     number: { type: String },
     location: { type: String },
     homeAddress: { type: String },
